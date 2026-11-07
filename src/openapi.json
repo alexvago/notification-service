@@ -159,7 +159,7 @@
         "properties": {
           "recipient": {
             "type": "string",
-            "description": "The target recipient (e-mail address, phone number, or device token).",
+            "description": "The target recipient. Validated per channel: e-mail address for 'email', E.164 phone number for 'sms', UUID device token for 'push'.",
             "example": "user@example.com"
           },
           "channel": {
@@ -172,7 +172,66 @@
             "example": "Hello, this is a test notification."
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "channel": {
+                  "const": "email"
+                }
+              },
+              "required": ["channel"]
+            },
+            "then": {
+              "properties": {
+                "recipient": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Must be a valid e-mail address when channel is 'email'."
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "channel": {
+                  "const": "sms"
+                }
+              },
+              "required": ["channel"]
+            },
+            "then": {
+              "properties": {
+                "recipient": {
+                  "type": "string",
+                  "pattern": "^\\+[1-9]\\d{1,14}$",
+                  "description": "Must be a valid E.164 phone number (e.g. +46701234567) when channel is 'sms'."
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "channel": {
+                  "const": "push"
+                }
+              },
+              "required": ["channel"]
+            },
+            "then": {
+              "properties": {
+                "recipient": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Must be a valid UUID device token when channel is 'push'."
+                }
+              }
+            }
+          }
+        ]
       },
       "NotificationChannel": {
         "type": "string",

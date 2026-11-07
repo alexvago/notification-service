@@ -102,7 +102,7 @@ describe("Notifications Module (e2e)", () => {
         return request(app.getHttpServer())
           .post("/notifications")
           .send({
-            recipient: "device-token-abc",
+            recipient: "123e4567-e89b-42d3-a456-426614174000",
             channel: "push",
             message: "Test push notification",
           })
@@ -179,6 +179,131 @@ describe("Notifications Module (e2e)", () => {
       });
     });
 
+    describe("Recipient validation by channel", () => {
+      const validEmail = "user@example.com";
+      const validPhone = "+46701234567";
+      const validDeviceToken = "123e4567-e89b-42d3-a456-426614174000";
+
+      it("should accept a valid e-mail address for 'email' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: validEmail,
+            channel: "email",
+            message: "Channel-validated email",
+          })
+          .expect(201)
+          .expect((res) => {
+            expect(res.body).toHaveProperty("status", "queued");
+          });
+      });
+
+      it("should accept a valid E.164 phone number for 'sms' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: validPhone,
+            channel: "sms",
+            message: "Channel-validated sms",
+          })
+          .expect(201)
+          .expect((res) => {
+            expect(res.body).toHaveProperty("status", "queued");
+          });
+      });
+
+      it("should accept a valid UUID device token for 'push' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: validDeviceToken,
+            channel: "push",
+            message: "Channel-validated push",
+          })
+          .expect(201)
+          .expect((res) => {
+            expect(res.body).toHaveProperty("status", "queued");
+          });
+      });
+
+      it("should reject a phone number as recipient for 'email' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: validPhone,
+            channel: "email",
+            message: "Test notification",
+          })
+          .expect(400);
+      });
+
+      it("should reject a non-email string as recipient for 'email' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: "not-an-email",
+            channel: "email",
+            message: "Test notification",
+          })
+          .expect(400);
+      });
+
+      it("should reject an e-mail address as recipient for 'sms' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: validEmail,
+            channel: "sms",
+            message: "Test notification",
+          })
+          .expect(400);
+      });
+
+      it("should reject a phone number without '+' prefix for 'sms' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: "46701234567",
+            channel: "sms",
+            message: "Test notification",
+          })
+          .expect(400);
+      });
+
+      it("should reject a phone number with more than 15 digits for 'sms' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: "+1234567890123456",
+            channel: "sms",
+            message: "Test notification",
+          })
+          .expect(400);
+      });
+
+      it("should reject a non-UUID string as recipient for 'push' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: "device-token-abc",
+            channel: "push",
+            message: "Test notification",
+          })
+          .expect(400);
+      });
+
+      it("should reject an e-mail address as recipient for 'push' channel", () => {
+        return request(app.getHttpServer())
+          .post("/notifications")
+          .send({
+            recipient: validEmail,
+            channel: "push",
+            message: "Test notification",
+          })
+          .expect(400);
+      });
+    });
+
     describe("Message validation", () => {
       it("should reject empty message string", () => {
         return request(app.getHttpServer())
@@ -232,7 +357,7 @@ describe("Notifications Module (e2e)", () => {
         return request(app.getHttpServer())
           .post("/notifications")
           .send({
-            recipient: "user@example.com",
+            recipient: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
             channel: "push",
             message: "🔔 Notification with emoji: こんにちは 🌍",
           })
@@ -274,7 +399,7 @@ describe("Notifications Module (e2e)", () => {
         return request(app.getHttpServer())
           .post("/notifications")
           .send({
-            recipient: "newuser@example.com",
+            recipient: "+1234567890",
             channel: "sms",
             message: "SMS delivery test",
           })
@@ -294,12 +419,12 @@ describe("Notifications Module (e2e)", () => {
             message: "Msg1",
           },
           {
-            recipient: "b@example.com",
+            recipient: "+2345678901",
             channel: "sms" as const,
             message: "Msg2",
           },
           {
-            recipient: "c@example.com",
+            recipient: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
             channel: "push" as const,
             message: "Msg3",
           },
@@ -344,7 +469,7 @@ describe("Notifications Module (e2e)", () => {
       await request(app.getHttpServer())
         .post("/notifications")
         .send({
-          recipient: "user2@example.com",
+          recipient: "+3456789012",
           channel: "sms",
           message: "Second",
         })
@@ -364,7 +489,7 @@ describe("Notifications Module (e2e)", () => {
       await request(app.getHttpServer())
         .post("/notifications")
         .send({
-          recipient: "full@example.com",
+          recipient: "9c8b7a6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
           channel: "push",
           message: "Full payload test",
         })
@@ -375,7 +500,7 @@ describe("Notifications Module (e2e)", () => {
         .expect(200)
         .expect((res) => {
           const notification = (res.body as NotificationItem[]).find(
-            (n) => n.recipient === "full@example.com",
+            (n) => n.recipient === "9c8b7a6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
           );
           expect(notification).toBeDefined();
           expect(notification).toHaveProperty("id");
@@ -435,7 +560,7 @@ describe("Notifications Module (e2e)", () => {
       await request(app.getHttpServer())
         .post("/notifications")
         .send({
-          recipient: "fields@example.com",
+          recipient: "+4567890123",
           channel: "sms",
           message: "Fields check",
         })
@@ -446,7 +571,7 @@ describe("Notifications Module (e2e)", () => {
         .expect(200)
         .expect((res) => {
           const notification = (res.body as NotificationItem[]).find(
-            (n) => n.recipient === "fields@example.com",
+            (n) => n.recipient === "+4567890123",
           );
           expect(notification).toBeDefined();
           // biome-ignore lint/style/noNonNullAssertion: assertion is safe here because we just checked that notification is defined
