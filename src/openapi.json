@@ -1,0 +1,245 @@
+{
+  "openapi": "3.2.1",
+  "info": {
+    "title": "Notification Service",
+    "description": "A small notification service that accepts requests to send\nnotifications via email, SMS, or push, and reports their\ndelivery status.\n",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Notifications",
+      "description": "Notification creation and status lookup"
+    }
+  ],
+  "paths": {
+    "/notifications": {
+      "post": {
+        "tags": ["Notifications"],
+        "summary": "Create a new notification",
+        "description": "Queue a notification for delivery via the specified channel.\nThe service will simulate sending it and update the status\naccordingly.\n",
+        "operationId": "createNotification",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationRequest"
+              },
+              "example": {
+                "recipient": "user@example.com",
+                "channel": "email",
+                "message": "Hello, this is a test notification."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Notification successfully queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                },
+                "example": {
+                  "id": "ntf_abc123",
+                  "recipient": "user@example.com",
+                  "channel": "email",
+                  "message": "Hello, this is a test notification.",
+                  "status": "queued"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 400,
+                  "message": [
+                    "recipient must be a string",
+                    {
+                      "channel must be one of the following values": "email, sms, push"
+                    },
+                    "message must be a string"
+                  ],
+                  "error": "Bad Request"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 500,
+                  "message": "Internal server error",
+                  "error": "Internal Server Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{id}": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Retrieve notification status",
+        "description": "Returns the current status of a notification.",
+        "operationId": "getNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notification identifier.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification details retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                },
+                "example": {
+                  "id": "ntf_abc123",
+                  "recipient": "user@example.com",
+                  "channel": "email",
+                  "message": "Hello, this is a test notification.",
+                  "status": "sent"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Notification not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "Notification with ID 'ntf_abc123' not found",
+                  "error": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateNotificationRequest": {
+        "type": "object",
+        "required": ["recipient", "channel", "message"],
+        "properties": {
+          "recipient": {
+            "type": "string",
+            "description": "The target recipient (e-mail address, phone number, or device token).",
+            "example": "user@example.com"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/NotificationChannel"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The notification message body. Must not be empty.",
+            "example": "Hello, this is a test notification."
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotificationChannel": {
+        "type": "string",
+        "enum": ["email", "sms", "push"],
+        "description": "The delivery channel for this notification."
+      },
+      "NotificationStatus": {
+        "type": "string",
+        "enum": ["queued", "sent", "failed"],
+        "description": "Current lifecycle status of the notification.\n- queued: awaiting delivery\n- sent: successfully delivered\n- failed: delivery attempt failed\n"
+      },
+      "NotificationResponse": {
+        "type": "object",
+        "required": ["id", "recipient", "channel", "message", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique notification identifier, assigned on creation.",
+            "example": "ntf_abc123"
+          },
+          "recipient": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/NotificationChannel"
+          },
+          "message": {
+            "type": "string",
+            "example": "Hello, this is a test notification."
+          },
+          "status": {
+            "$ref": "#/components/schemas/NotificationStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["statusCode", "message", "error"],
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "example": 400
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Human-readable error description or list of field-level errors."
+          },
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
