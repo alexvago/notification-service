@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { NotificationDispatcherService } from "./dispatcher/notification-dispatcher.service.js";
 import { CreateNotificationDto } from "./dto/create-notification.dto.js";
 import { NotificationsController } from "./notifications.controller.js";
 import { NotificationsService } from "./notifications.service.js";
@@ -8,6 +9,11 @@ const mockNotificationRepository = {
   findAll: vitest.fn(),
   create: vitest.fn(),
   findOne: vitest.fn(),
+  updateStatus: vitest.fn(),
+};
+
+const mockDispatcher = {
+  enqueue: vitest.fn(),
 };
 
 describe("NotificationsService", () => {
@@ -21,6 +27,10 @@ describe("NotificationsService", () => {
         {
           provide: NotificationRepository,
           useValue: mockNotificationRepository,
+        },
+        {
+          provide: NotificationDispatcherService,
+          useValue: mockDispatcher,
         },
       ],
     }).compile();
@@ -42,5 +52,6 @@ describe("NotificationsService", () => {
     const result = await service.create(createNotificationDto);
 
     expect(result).toEqual({ id: expect.any(String), status: "queued" });
+    expect(mockDispatcher.enqueue).toHaveBeenCalledTimes(1);
   });
 });

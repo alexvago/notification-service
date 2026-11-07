@@ -18,4 +18,18 @@ export class InMemoryNotificationRepository implements NotificationRepository {
     this.notifications.set(notification.id, notification);
     return notification;
   }
+
+  async updateStatus(
+    id: string,
+    status: Notification["status"],
+  ): Promise<void> {
+    const notification = this.notifications.get(id);
+    if (!notification) {
+      console.warn(
+        `Cannot update status: notification with id ${id} not found`,
+      );
+      return;
+    }
+    notification.status = status;
+  }
 }

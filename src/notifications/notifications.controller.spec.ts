@@ -7,6 +7,13 @@ const mockNotificationRepository = {
   findAll: vitest.fn(),
   create: vitest.fn(),
   findOne: vitest.fn(),
+  updateStatus: vitest.fn(),
+};
+
+const mockNotificationService = {
+  findAll: vitest.fn(),
+  create: vitest.fn(),
+  findOne: vitest.fn(),
 };
 
 describe("NotificationsController", () => {
@@ -16,7 +23,7 @@ describe("NotificationsController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NotificationsController],
       providers: [
-        NotificationsService,
+        { provide: NotificationsService, useValue: mockNotificationService },
         {
           provide: NotificationRepository,
           useValue: mockNotificationRepository,
@@ -29,5 +36,10 @@ describe("NotificationsController", () => {
 
   it("should be defined", () => {
     expect(controller).toBeDefined();
+  });
+
+  it("should call findAll on the service", async () => {
+    controller.findAll();
+    expect(mockNotificationService.findAll).toHaveBeenCalled();
   });
 });

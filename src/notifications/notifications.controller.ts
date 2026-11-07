@@ -15,7 +15,12 @@ export class NotificationsController {
 
   @Get()
   async findAll() {
-    return await this.notificationsService.findAll();
+    try {
+      return await this.notificationsService.findAll();
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      throw error;
+    }
   }
 
   @Post()
@@ -30,12 +35,17 @@ export class NotificationsController {
 
   @Get(":id")
   async findOne(@Param("id") id: string) {
-    const notification = await this.notificationsService.findOne(id);
+    try {
+      const notification = await this.notificationsService.findOne(id);
 
-    if (!notification) {
-      throw new NotFoundException(`Notification with ID ${id} not found`);
+      if (!notification) {
+        throw new NotFoundException(`Notification with ID ${id} not found`);
+      }
+
+      return notification;
+    } catch (error) {
+      console.error(`Error fetching notification with ID ${id}:`, error);
+      throw error;
     }
-
-    return notification;
   }
 }

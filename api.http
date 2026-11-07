@@ -2,18 +2,40 @@
 
 
 ### Get a specific notification by ID
-GET http://localhost:3000/notifications/115a7fb0-5b08-45af-92c5-5f261040e116
+@notificationId = 6ffcaeed-daa0-40ce-99fb-ff34f02958af
+GET http://localhost:3000/notifications/{{notificationId}}
 
 ### Get all notifications
 GET http://localhost:3000/notifications
 
 
-### Create a new notification
+### Create a new  email notification
 POST http://localhost:3000/notifications
 Content-Type: application/json
 
 {
     "recipient": "email@email.com",
     "channel": "email",
+    "message": "This is a new notification message."
+}
+
+### Create a new  sms notification
+POST http://localhost:3000/notifications
+Content-Type: application/json
+
+{
+    "recipient": "+1234567890",
+    "channel": "sms",
+    "message": "This is a new notification message."
+}
+
+
+### Create a new  push notification
+POST http://localhost:3000/notifications
+Content-Type: application/json
+
+{
+    "recipient": "943E9CD4-303A-4054-9EEC-CA38A1FBC02A",
+    "channel": "push",
     "message": "This is a new notification message."
 }

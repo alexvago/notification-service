@@ -9,6 +9,9 @@
 /out-tsc
 /*.tsbuildinfo
 
+# test output
+/coverage
+
 # dependencies
 /node_modules
 
