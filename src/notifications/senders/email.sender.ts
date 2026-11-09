@@ -23,10 +23,8 @@ export class EmailSender implements NotificationSender {
 
     await this.delay(this.simulatedLatencyMs);
 
-    if (notification.recipient.includes(FAILURE_MARKER)) {
-      throw new Error(
-        `Delivery failed: recipient ${notification.recipient} is a failure marker`,
-      );
+    if (notification.message.includes(FAILURE_MARKER)) {
+      throw new Error(`Delivery failed to ${notification.recipient}`);
     }
 
     console.log(`Email delivered to ${notification.recipient}`);

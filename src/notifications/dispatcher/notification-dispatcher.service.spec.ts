@@ -3,43 +3,39 @@ import { Notification } from "../entities/notification.entity.js";
 import { InMemoryNotificationRepository } from "../repositories/in-memory.repository.js";
 import { NotificationRepository } from "../repositories/notification.repository.js";
 import { NotificationSender } from "../senders/notification-sender.js";
-import {
-  NOTIFICATION_SENDERS,
-  NotificationSenders,
-} from "../senders/senders.module.js";
+import { NOTIFICATION_SENDERS } from "../senders/senders.module.js";
 import { NotificationDispatcherService } from "./notification-dispatcher.service.js";
 
 describe("NotificationDispatcherService", () => {
   let service: NotificationDispatcherService;
   let repository: InMemoryNotificationRepository;
-  let senders: NotificationSenders;
+
+  // Track which notification IDs should fail
+  const failIds = new Set<string>();
 
   const createSender = (
     channel: "email" | "sms" | "push",
     delay = 10,
   ): NotificationSender => {
-    const sender = {
+    return {
       channel,
       send: vitest.fn(async (notification: Notification) => {
-        if (notification.recipient.includes("@fail")) {
-          throw new Error(`Delivery failed for ${notification.recipient}`);
+        if (failIds.has(notification.id)) {
+          throw new Error(`Delivery failed to ${notification.recipient}`);
         }
         await new Promise((r) => setTimeout(r, delay));
       }),
     };
-    return sender;
   };
 
   beforeEach(async () => {
+    failIds.clear();
     repository = new InMemoryNotificationRepository();
-    const emailSender = createSender("email");
-    const smsSender = createSender("sms");
-    const pushSender = createSender("push");
 
-    senders = new Map([
-      ["email", emailSender],
-      ["sms", smsSender],
-      ["push", pushSender],
+    const senders = new Map([
+      ["email", createSender("email")],
+      ["sms", createSender("sms")],
+      ["push", createSender("push")],
     ]);
 
     const module: TestingModule = await Test.createTestingModule({
@@ -87,7 +83,7 @@ describe("NotificationDispatcherService", () => {
   it("should update status to 'failed' for failed send and keep processing", async () => {
     const failNotification = new Notification(
       "1",
-      "test@fail.example.com",
+      "user@example.com",
       "email",
       "Fail me",
       "queued",
@@ -99,6 +95,9 @@ describe("NotificationDispatcherService", () => {
       "Success",
       "queued",
     );
+
+    // Mark first notification as failed
+    failIds.add(failNotification.id);
 
     await repository.create(failNotification);
     await repository.create(successNotification);
@@ -163,5 +162,50 @@ describe("NotificationDispatcherService", () => {
     const sms = await repository.findById("2");
     expect(email?.status).toBe("sent");
     expect(sms?.status).toBe("sent");
+  });
+
+  it("should handle consecutive failures in a queue", async () => {
+    const failNotification1 = new Notification(
+      "1",
+      "user@example.com",
+      "email",
+      "Fail 1",
+      "queued",
+    );
+    const failNotification2 = new Notification(
+      "2",
+      "user@example.com",
+      "email",
+      "Fail 2",
+      "queued",
+    );
+    const successNotification = new Notification(
+      "3",
+      "user@example.com",
+      "email",
+      "Success",
+      "queued",
+    );
+
+    // Mark first two as failed
+    failIds.add(failNotification1.id);
+    failIds.add(failNotification2.id);
+
+    await repository.create(failNotification1);
+    await repository.create(failNotification2);
+    await repository.create(successNotification);
+    await service.enqueue(failNotification1);
+    await service.enqueue(failNotification2);
+    await service.enqueue(successNotification);
+
+    // Wait for all to be processed
+    await new Promise((r) => setTimeout(r, 150));
+
+    const failed1 = await repository.findById("1");
+    const failed2 = await repository.findById("2");
+    const succeeded = await repository.findById("3");
+    expect(failed1?.status).toBe("failed");
+    expect(failed2?.status).toBe("failed");
+    expect(succeeded?.status).toBe("sent");
   });
 });

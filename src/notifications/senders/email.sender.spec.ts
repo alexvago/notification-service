@@ -38,17 +38,17 @@ describe("EmailSender", () => {
     await expect(sender.send(notification)).resolves.toBeUndefined();
   });
 
-  it("should throw for failure marker recipient", async () => {
+  it("should throw for failure marker in message", async () => {
     const notification = new Notification(
       "1",
-      "test@fail.example.com",
+      "user@example.com",
       "email",
-      "Hello",
+      `Test ${FAILURE_MARKER}`,
       "queued",
     );
 
     await expect(sender.send(notification)).rejects.toThrow(
-      "Delivery failed: recipient test@fail.example.com is a failure marker",
+      "Delivery failed to user@example.com",
     );
   });
 

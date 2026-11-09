@@ -39,3 +39,15 @@ Content-Type: application/json
     "channel": "push",
     "message": "This is a new notification message."
 }
+
+
+### Create a failing notification
+
+POST http://localhost:3000/notifications
+Content-Type: application/json
+
+{
+    "recipient": "943E9CD4-303A-4054-9EEC-CA38A1FBC02A",
+    "channel": "push",
+    "message": "This will @fail"
+}

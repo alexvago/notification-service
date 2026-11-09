@@ -1,7 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { Notification } from "../entities/notification.entity.js";
-import { FAILURE_MARKER } from "./email.sender.js";
-import { PushSender } from "./push.sender.js";
+import { FAILURE_MARKER, PushSender } from "./push.sender.js";
 
 describe("PushSender", () => {
   let sender: PushSender;
@@ -39,17 +38,17 @@ describe("PushSender", () => {
     await expect(sender.send(notification)).resolves.toBeUndefined();
   });
 
-  it("should throw for failure marker recipient", async () => {
+  it("should throw for failure marker in message", async () => {
     const notification = new Notification(
       "1",
-      "test@fail.example.com",
+      "device-token-abc",
       "push",
-      "Hello",
+      `Test ${FAILURE_MARKER}`,
       "queued",
     );
 
     await expect(sender.send(notification)).rejects.toThrow(
-      "Delivery failed: recipient test@fail.example.com is a failure marker",
+      "Delivery failed to device-token-abc",
     );
   });
 });

@@ -3,8 +3,9 @@ import {
   Notification,
   NotificationChannel,
 } from "../entities/notification.entity.js";
-import { FAILURE_MARKER } from "./email.sender.js";
 import { NotificationSender } from "./notification-sender.js";
+
+export const FAILURE_MARKER = "@fail";
 
 @Injectable()
 export class SmsSender implements NotificationSender {
@@ -22,10 +23,8 @@ export class SmsSender implements NotificationSender {
 
     await this.delay(this.simulatedLatencyMs);
 
-    if (notification.recipient.includes(FAILURE_MARKER)) {
-      throw new Error(
-        `Delivery failed: recipient ${notification.recipient} is a failure marker`,
-      );
+    if (notification.message.includes(FAILURE_MARKER)) {
+      throw new Error(`Delivery failed to ${notification.recipient}`);
     }
 
     console.log(`SMS delivered to ${notification.recipient}`);

@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import { NotificationDispatcherService } from "./dispatcher/notification-dispatcher.service.js";
+import { NotificationValidator } from "./domain/validator.js";
 import { CreateNotificationDto } from "./dto/create-notification.dto.js";
 import { Notification } from "./entities/notification.entity.js";
 import { NotificationRepository } from "./repositories/notification.repository.js";
@@ -14,6 +15,9 @@ export class NotificationsService {
   ) {}
 
   async create(createNotificationDto: CreateNotificationDto) {
+    // Domain validation — fail fast before touching infrastructure
+    NotificationValidator.validate(createNotificationDto);
+
     const uuid = crypto.randomUUID();
     const notification = new Notification(
       uuid,
